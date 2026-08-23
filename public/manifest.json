@@ -1,25 +1,17 @@
 {
-  "name": "TabulaPDF - Smart PDF to Excel Converter",
   "short_name": "TabulaPDF",
-  "description": "Convert PDF documents, bank statements, invoices, and tables to high-fidelity Excel (.xlsx) and CSV spreadsheets.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#0284c7",
-  "orientation": "any",
+  "name": "TabulaPDF - Smart PDF to Excel & CSV Converter",
+  "description": "Convert PDF documents, bank statements, invoices, and tables to high-fidelity Excel (.xlsx), CSV, and JSON sheets with instant local parsing and intelligent AI OCR extraction.",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
     }
   ],
-  "categories": ["productivity", "utilities", "business"]
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "portrait"
 }

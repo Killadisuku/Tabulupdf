@@ -17,6 +17,7 @@ import { SampleVault } from './components/SampleVault';
 import { FindReplaceModal } from './components/FindReplaceModal';
 import { ColumnSplitMergeModal } from './components/ColumnSplitMergeModal';
 import { ShareModal } from './components/ShareModal';
+import { SeoContentSection } from './components/SeoContentSection';
 import {
   ExtractionOptions,
   SheetData,
@@ -279,12 +280,18 @@ export default function App() {
         {activeTab === 'converter' && (
           <>
             {!hasActiveDocument ? (
-              <Dropzone
-                onFileSelect={handleFileSelect}
-                onSelectSample={handleSelectSample}
-                options={options}
-                setOptions={setOptions}
-              />
+              <div className="flex-1 overflow-y-auto">
+                <Dropzone
+                  onFileSelect={handleFileSelect}
+                  onSelectSample={handleSelectSample}
+                  options={options}
+                  setOptions={setOptions}
+                />
+                <SeoContentSection
+                  onSelectSample={handleSelectSample}
+                  onScrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                />
+              </div>
             ) : (
               <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
                 {/* Mobile View Switcher */}
