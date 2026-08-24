@@ -189,11 +189,30 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
   const handleAnalyzeAiInstruction = async (instruction: string): Promise<AiEditPlanResult | null> => {
     setIsAiAnalyzing(true);
     try {
+      let imageBase64: string | undefined = undefined;
+      if (pdfDoc) {
+        try {
+          const page = await pdfDoc.getPage(activePageNumber);
+          const viewport = page.getViewport({ scale: 1.2 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+          }
+        } catch (imgErr) {
+          console.warn('Could not render page image for AI reasoning:', imgErr);
+        }
+      }
+
       const result = await analyzeAiEditInstruction(
         instruction,
         activePageNumber,
         pages,
-        cachedPageTextItems
+        cachedPageTextItems,
+        imageBase64
       );
 
       if (result.found && result.edits.length > 0) {
@@ -205,8 +224,11 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
         if (firstTargetPage && firstTargetPage !== activePageNumber) {
           setActivePageNumber(firstTargetPage);
         }
+      } else if (result.isSuggestion || result.isAmbiguous) {
+        setCurrentAiPlan(result);
+        setAiHighlightBoxes(result.highlightBoxes);
       } else {
-        setCurrentAiPlan(null);
+        setCurrentAiPlan(result);
         setAiHighlightBoxes([]);
       }
 

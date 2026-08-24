@@ -15,13 +15,20 @@ import {
   Trash2,
   Table as TableIcon,
   Tag,
-  Loader2
+  Loader2,
+  DollarSign,
+  Package,
+  Building2,
+  FileText,
+  Search,
+  Eye
 } from 'lucide-react';
 import {
   AiEditAction,
   AiEditPlanResult,
   AiEditHistoryEntry,
-  AmbiguityChoice
+  AmbiguityChoice,
+  DetectedDocumentField
 } from '../../utils/aiEditEngine';
 
 interface AiEditPanelProps {
@@ -48,9 +55,10 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
   onUndoHistoryEntry,
 }) => {
   const [instruction, setInstruction] = useState('');
-  const [activeTab, setActiveTab] = useState<'edit' | 'history'>('edit');
+  const [activeTab, setActiveTab] = useState<'edit' | 'history' | 'detected'>('edit');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedEditIds, setSelectedEditIds] = useState<Set<string>>(new Set());
+  const [detectedSearch, setDetectedSearch] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Auto-focus input when opened
@@ -72,14 +80,14 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
   if (!isOpen) return null;
 
   const samplePrompts = [
+    'Change 210 including vat to 208 including vat',
+    'Change the purchase price to 208',
     'Change the date to 30/08/2026',
-    'Change the date to today',
-    'Change Needle Valve quantity to 10',
+    'Change the purchaser to XYZ Trading LLC',
+    'Change quantity to 10',
     'Update PO number to AOT-SG-3008-01',
-    'Change purchaser to XYZ Trading LLC',
-    'Replace the phone number with +971 55 123 4567',
+    'Replace phone with +971 55 123 4567',
     'Remove the phone number',
-    'Delete the Valve row',
   ];
 
   const handleSelectSample = (prompt: string) => {
@@ -88,6 +96,25 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
+  };
+
+  const handleSelectDetectedField = (field: DetectedDocumentField) => {
+    setActiveTab('edit');
+    setErrorMsg(null);
+    let prompt = '';
+    if (field.category === 'price') {
+      prompt = `Change ${field.label.toLowerCase()} to 208`;
+    } else if (field.category === 'date') {
+      prompt = `Change the date to 30/08/2026`;
+    } else if (field.category === 'quantity') {
+      prompt = `Change quantity to 10`;
+    } else if (field.category === 'contact' && /purchaser|customer/i.test(field.label)) {
+      prompt = `Change purchaser to XYZ Trading LLC`;
+    } else {
+      prompt = `Change ${field.value} to ...`;
+    }
+    setInstruction(prompt);
+    setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
   const handleFormSubmit = async (e?: React.FormEvent) => {
@@ -181,6 +208,13 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
   };
 
   const activeEditsCount = currentPlan?.edits.filter((e) => selectedEditIds.has(e.id)).length || 0;
+  const detectedFields = currentPlan?.detectedFields || [];
+
+  const filteredDetected = detectedFields.filter(
+    (f) =>
+      f.label.toLowerCase().includes(detectedSearch.toLowerCase()) ||
+      f.value.toLowerCase().includes(detectedSearch.toLowerCase())
+  );
 
   return (
     <aside
@@ -188,7 +222,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
         /* Mobile: Bottom Sheet */
         bottom-0 left-0 right-0 max-h-[85vh] rounded-t-3xl border-b-0
         /* Desktop: Floating Side Panel */
-        sm:bottom-6 sm:right-6 sm:left-auto sm:w-[410px] sm:max-h-[calc(100vh-100px)] sm:rounded-2xl sm:border"
+        sm:bottom-6 sm:right-6 sm:left-auto sm:w-[420px] sm:max-h-[calc(100vh-100px)] sm:rounded-2xl sm:border"
       aria-label="AI Edit Panel"
     >
       {/* 1. HEADER */}
@@ -201,19 +235,33 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
             <div className="flex items-center gap-1.5">
               <h2 className="text-xs font-bold text-white tracking-wide">AI Edit</h2>
               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60">
-                Context-Aware
+                Multi-Layer Engine
               </span>
             </div>
             <p className="text-[11px] text-slate-400 leading-none mt-0.5">
-              Describe what you want changed
+              Visual Source of Truth • Table-Aware
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Detected Fields Tab Switcher */}
+          <button
+            onClick={() => setActiveTab(activeTab === 'detected' ? 'edit' : 'detected')}
+            className={`p-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer ${
+              activeTab === 'detected'
+                ? 'bg-slate-800 text-emerald-400'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+            title="Show Detected Document Fields"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span className="text-[11px] hidden sm:inline">Fields</span>
+          </button>
+
           {/* History Tab Switcher */}
           <button
-            onClick={() => setActiveTab(activeTab === 'edit' ? 'history' : 'edit')}
+            onClick={() => setActiveTab(activeTab === 'history' ? 'edit' : 'history')}
             className={`p-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer ${
               activeTab === 'history'
                 ? 'bg-slate-800 text-emerald-400'
@@ -242,7 +290,76 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
 
       {/* 2. BODY CONTENT (SCROLLABLE) */}
       <div className="p-3.5 overflow-y-auto max-h-[62vh] sm:max-h-[calc(100vh-220px)] space-y-3.5">
-        {activeTab === 'history' ? (
+        {activeTab === 'detected' ? (
+          /* DETECTED FIELDS EXPLORER */
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-slate-200">Detected Document Fields</span>
+                <p className="text-[11px] text-slate-400">Tap any field to compose an edit</p>
+              </div>
+              <button
+                onClick={() => setActiveTab('edit')}
+                className="text-[11px] text-emerald-400 hover:underline cursor-pointer"
+              >
+                Back to Edit
+              </button>
+            </div>
+
+            {/* Search filter */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-500" />
+              <input
+                type="text"
+                value={detectedSearch}
+                onChange={(e) => setDetectedSearch(e.target.value)}
+                placeholder="Search detected fields..."
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {filteredDetected.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 text-xs">
+                No detected fields matching search.
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                {filteredDetected.map((field) => {
+                  let Icon = Tag;
+                  if (field.category === 'price') Icon = DollarSign;
+                  else if (field.category === 'date') Icon = Calendar;
+                  else if (field.category === 'quantity') Icon = Package;
+                  else if (field.category === 'contact') Icon = Building2;
+                  else if (field.category === 'table_cell') Icon = TableIcon;
+
+                  return (
+                    <div
+                      key={field.id}
+                      onClick={() => handleSelectDetectedField(field)}
+                      className="p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 transition-all cursor-pointer group flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-start gap-2 min-w-0">
+                        <div className="p-1 rounded-md bg-slate-900 text-emerald-400 border border-slate-800 group-hover:border-emerald-500/30 shrink-0 mt-0.5">
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-slate-200 group-hover:text-emerald-300 flex items-center gap-1.5">
+                            <span className="truncate">{field.label}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">P.{field.pageNumber}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                            {field.value}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'history' ? (
           /* HISTORY TAB */
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -289,7 +406,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
         ) : (
           /* EDIT TAB */
           <>
-            {/* SMART SUGGESTION CARD (When user gave slightly mismatched old value, but AI found the actual field) */}
+            {/* SMART SUGGESTION CARD */}
             {currentPlan && currentPlan.isSuggestion && (
               <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-2.5 animate-in fade-in">
                 <div className="flex items-start gap-2">
@@ -336,7 +453,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
               </div>
             )}
 
-            {/* MULTIPLE DATES / AMBIGUITY PICKER */}
+            {/* MULTIPLE MATCHES / AMBIGUITY PICKER */}
             {currentPlan && currentPlan.isAmbiguous && currentPlan.ambiguityChoices && currentPlan.ambiguityChoices.length > 0 && (
               <div className="p-3 rounded-xl bg-sky-950/40 border border-sky-500/40 space-y-2.5 animate-in fade-in">
                 <div className="flex items-start gap-2">
@@ -434,7 +551,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={() => {}} // handled by parent div
+                              onChange={() => {}}
                               className="rounded border-slate-700 text-emerald-500 focus:ring-0 cursor-pointer"
                             />
                             {edit.fieldLabel ? (
@@ -443,7 +560,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                               <span>
                                 {edit.type === 'replace_text' && 'Replace Text'}
                                 {edit.type === 'delete_text' && 'Delete Text'}
-                                {edit.type === 'update_table_cell' && 'Update Cell'}
+                                {edit.type === 'update_table_cell' && 'Update Table Cell'}
                                 {edit.type === 'add_table_row' && 'Add Row'}
                                 {edit.type === 'delete_table_row' && 'Delete Row'}
                               </span>
@@ -469,11 +586,11 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                           <div className="flex items-center gap-1.5 text-xs pl-5">
                             {edit.oldValue && (
                               <>
-                                <span className="line-through text-slate-400">{edit.oldValue}</span>
+                                <span className="line-through text-rose-300 bg-rose-950/50 px-1 py-0.5 rounded">{edit.oldValue}</span>
                                 <ArrowRight className="w-3 h-3 text-slate-500 shrink-0" />
                               </>
                             )}
-                            <span className="font-semibold text-emerald-300">{edit.newValue}</span>
+                            <span className="font-semibold text-emerald-300 bg-emerald-950/50 px-1 py-0.5 rounded">{edit.newValue || edit.replacementText}</span>
                           </div>
                         )}
 
@@ -483,7 +600,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                           </div>
                         )}
 
-                        {edit.description && edit.type !== 'replace_text' && edit.type !== 'delete_text' && (
+                        {edit.description && edit.type !== 'replace_text' && edit.type !== 'update_table_cell' && edit.type !== 'delete_text' && (
                           <div className="text-[11px] text-slate-400 pl-5">{edit.description}</div>
                         )}
                       </div>
@@ -515,22 +632,42 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
               </div>
             )}
 
-            {/* ERROR / NOT FOUND MESSAGE */}
+            {/* ERROR / NOT FOUND MESSAGE WITH "SHOW DETECTED FIELDS" ACTION */}
             {errorMsg && !currentPlan?.found && !currentPlan?.isSuggestion && (
-              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-300 space-y-1.5 animate-in fade-in">
+              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-300 space-y-2 animate-in fade-in">
                 <div className="flex items-center gap-1.5 font-semibold text-rose-200">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>Field Not Recognized</span>
                 </div>
                 <p className="text-[11px] text-rose-300/90 leading-relaxed">{errorMsg}</p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('detected')}
+                    className="w-full py-1.5 px-3 rounded-lg bg-rose-900/60 hover:bg-rose-800/80 text-white font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Show detected fields on this PDF</span>
+                  </button>
+                </div>
               </div>
             )}
 
             {/* NATURAL LANGUAGE INPUT FORM */}
             <form onSubmit={handleFormSubmit} className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-300">
-                Tell me what you want to change...
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Tell me what you want to change...
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('detected')}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer font-medium"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>Show detected fields</span>
+                </button>
+              </div>
 
               <div className="relative">
                 <textarea
@@ -538,7 +675,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                   value={instruction}
                   onChange={(e) => setInstruction(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="e.g. Change the date to 30/08/2026, change Needle Valve quantity to 10..."
+                  placeholder="e.g. Change 210 including vat to 208 including vat, change date to 30/08/2026..."
                   rows={3}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none transition-all"
                   disabled={isAnalyzing}
@@ -565,7 +702,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Analyzing PDF Structure & Context...</span>
+                    <span>Analyzing Document Intent & Structure...</span>
                   </>
                 ) : (
                   <>
@@ -579,7 +716,7 @@ export const AiEditPanel: React.FC<AiEditPanelProps> = ({
             {/* EXAMPLE PROMPTS PILLS */}
             {!currentPlan && (
               <div className="space-y-1.5 pt-1">
-                <span className="text-[11px] font-semibold text-slate-400">Natural examples:</span>
+                <span className="text-[11px] font-semibold text-slate-400">Try asking:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {samplePrompts.map((sample, idx) => (
                     <button

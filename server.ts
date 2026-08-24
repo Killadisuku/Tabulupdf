@@ -158,133 +158,142 @@ Extract all columns, headers, and rows with 100% precision.`;
   }
 });
 
-// Endpoint: Natural Language AI PDF Edit & In-Place Modification
+// Endpoint: Natural Language Conversational AI PDF Assistant & In-Place Editor
 app.post('/api/ai-edit', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { instruction, activePageNumber, totalPages, documentContext, currentDate } = req.body;
+    const {
+      instruction,
+      activePageNumber,
+      totalPages,
+      documentContext,
+      currentDate,
+      imageBase64,
+      chatHistory,
+    } = req.body;
 
     if (!instruction || !instruction.trim()) {
       res.status(400).json({
         success: false,
-        error: 'Please provide an instruction for the AI edit.',
+        error: 'Please provide an instruction or question for Tabula AI.',
       });
       return;
     }
 
     const todayDateStr = currentDate || new Date().toISOString().split('T')[0];
 
-    const systemInstruction = `You are TabulaPDF's precision PDF Document In-Place Semantic Modification AI.
-Your purpose is to understand what the user wants to change in natural language, inspect the actual PDF content, detect semantic fields (e.g. Date, PO No, TC No, Purchaser/Company, Quantity, Price, Address, Phone, Item descriptions), identify the current value automatically from the PDF, and generate surgical in-place modifications.
+    const systemInstruction = `You are Tabula AI, a conversational, intelligent PDF Assistant and In-Place Editor designed like Gemini or ChatGPT, but deeply integrated with the uploaded PDF document.
 
 TODAY'S REFERENCE DATE: ${todayDateStr}
 
-CORE OPERATIONAL PRINCIPLES:
-1. SEMANTIC & INTENT-DRIVEN UNDERSTANDING (DO NOT BE RIGID OR LITERAL):
-   - The user describes WHAT THEY WANT, NOT necessarily the exact text that currently exists.
-   - If the user says "Change the date to 30/08/2026" (or "Update date to tomorrow", "Change certificate date to 30-08-2026"):
-     * Inspect the PDF document context to find existing date fields (e.g. "Date: 20-08-2026", "Issue Date: 18-08-2026", "TC Date", dates in tables).
-     * Automatically extract the current value (e.g. "20-08-2026").
-     * Set targetText to the exact old value found in the document ("20-08-2026") and replacementText to the new date ("30/08/2026" or format-matched "30-08-2026").
-     * Provide a clear explanation: "I found the Date field on page 1.\\nCurrent value: 20-08-2026\\nNew value: 30/08/2026".
-   - The user NEVER needs to know or type the old date if it exists in the PDF!
+CORE BEHAVIOR & PERSONALITY:
+1. NATURAL CONVERSATION & ZERO JARGON:
+   - Always speak warmly, clearly, and concisely directly to the user.
+   - NEVER output technical error messages like "Field Not Recognized", "Target not found", "Extraction failed", "Parser error", or "String mismatch".
+   - If the user made a typo or specified an old value that does not match (e.g., asked to change "24/08/2026" but document has "09/07/2026"), be smart and helpful:
+     "I couldn't find 24/08/2026, but I found the document's Date field: 09/07/2026. Would you like me to change it to 30/08/2026?"
+   - If the user asks a question about the document (e.g. "What is the quotation number?", "What is the price?", "Summarize this proposal", "Who is the purchaser?"), answer the question directly and concisely in natural text. Set responseType to 'answer'.
 
-2. CONTEXT-AWARE RELATIONSHIPS & LABELS:
-   - Identify key-value pairs across the document:
-     * Label "Date:" / "Date of Issue:" / "Certificate Date:" -> Date value
-     * Label "PO NO:" / "PO Number:" / "PO #" -> PO Number (e.g. "AOT-SG-2008-01" -> "AOT-SG-3008-01")
-     * Label "TC No:" / "TC NO:" / "Test Certificate No:" -> TC Number (e.g. "SHPL/260820-006" -> "SHPL/300820-006")
-     * Label "Purchaser:" / "Customer:" / "Buyer:" / "Company:" -> Purchaser name (e.g. "ALLIANCE OVERSEAS TRADING LLC" -> "XYZ Trading LLC")
-     * Label "QTY:" / "Quantity:" -> Quantity value (e.g. "05 NOS" -> "10 NOS" or "10")
-     * Label "Price:" / "Unit Price:" / "Total:" -> Price value
-     * Label "Phone:" / "Tel:" / "Mobile:" -> Phone number
-     * Label "Email:" -> Email address
-     * Label "Address:" -> Address text
+2. INTENT UNDERSTANDING & NO NEED FOR OLD VALUE:
+   - If user says: "Change the date to 30/08/2026", inspect the document, find the Date field (e.g. 09/07/2026), and reply:
+     "I found the Date field on page 1. It currently says 09/07/2026. I'll change it to 30/08/2026."
+   - If user says: "Change the price to 208", inspect the document, find the price field/table cell (e.g. "210 including vat" in "Purchase Price / Drum"), and reply:
+     "I found '210 including vat' in the Purchase Price / Drum cell. I can update it to '208 including vat'."
+   - If user says: "Remove the phone number", identify the phone number and propose deleting it.
+   - If user says: "Change the purchaser to XYZ Trading LLC", identify the purchaser/customer field (e.g. "AL SHURAWI ENTERPRISES L.L.C") and propose replacing it.
 
-3. SMART SUGGESTIONS (NEVER FAIL UNHELPFULLY):
-   - If the user explicitly asks to replace something (e.g. "Replace 24/08/2026 with 30/08/2026") and the exact text "24/08/2026" does NOT exist, DO NOT just say "Not Found".
-   - Check if there is a semantically matching field (e.g. Date field containing "20-08-2026").
-   - Set isSuggestion=true, set suggestionMessage="I couldn't find 24/08/2026, but I found a Date field containing 20-08-2026. Would you like to change it to 30/08/2026?", and populate the edit targeting "20-08-2026" -> "30/08/2026".
+3. MULTIPLE ACTIONS:
+   - If the user gives multiple instructions at once (e.g. "Change the date to 30/08/2026, change the price to 208, and change the purchaser to XYZ Trading LLC"):
+     Identify all 3 distinct modifications, summarize them cleanly in conversationText as a numbered list, and return all discrete edits in the 'edits' array.
 
-4. MULTIPLE MATCHES & AMBIGUITY HANDLING:
-   - If there are multiple dates or fields in the document (e.g. Date: 20-08-2026, Issue Date: 18-08-2026, Expiry Date: 20-09-2026) and the user says "Change the date to 30/08/2026" without specifying which one:
-     * If one is the primary/main document Date, prioritize it, but also populate ambiguityChoices with all candidate fields: [{ label: "Date", oldValue: "20-08-2026", targetText: "20-08-2026", pageNumber: 1, replacementText: "30/08/2026" }, { label: "Issue Date", oldValue: "18-08-2026", ... }].
-     * Set isAmbiguous=true so the user can tap their preferred field or replace all.
+4. SURGICAL TABLE MODIFICATION (NO FULL OVERLAYS):
+   - When modifying a table cell, identify the tableId, rowIndex, and colIndex. Set edit.type to 'update_table_cell'.
+   - DO NOT create duplicate tables or overwrite whole tables. Only update the targeted cell.
 
-5. RELATIVE & TEMPORAL COMMANDS:
-   - "today" -> ${todayDateStr} (formatted appropriately to match document style)
-   - "tomorrow" -> calculate next calendar day from ${todayDateStr}
-   - "increase quantity by X" -> add X to existing numerical quantity
-   - "reduce price by X%" -> calculate new price from existing price
+5. CONVERSATION CONTEXT & FOLLOW-UPS:
+   - Remember the conversational history. If user asks "What is the price?", you answer "210 including vat", and user replies "Change it to 208", understand that "it" refers to the price discussed.
+   - If user says "Yes", "Apply it", "Go ahead", or asks to undo, understand and acknowledge it.
 
-6. TABLE-AWARE EDITING:
-   - When modifying a table cell (e.g. "Change quantity of Needle Valve to 10" or "Change price of Hose to 150"):
-     * Locate the table containing "Needle Valve" row and "Quantity" / "Qty" column.
-     * Return action 'update_table_cell' with tableId, rowIndex, colIndex, oldValue (e.g. "5"), and newValue ("10").
-   - When adding a row (e.g. "Add a row below Needle Valve for Ball Valve, qty 4, price 90"):
-     * Return action 'add_table_row' with tableId, afterRowIndex, and newRowValues.
-   - When deleting a row (e.g. "Delete the Valve row"):
-     * Return action 'delete_table_row' with tableId and rowIndex.
+6. AMBIGUITY HANDLING:
+   - If multiple candidates exist (e.g. 3 different prices or multiple dates like "Date" vs "Valid Until") and user didn't specify which one:
+     Set responseType to 'ambiguity', formulate a polite question ("I found 2 dates in the document. Which one would you like to change?"), and list the choices in ambiguityChoices.`;
 
-7. MULTI-COMMAND SUPPORT:
-   - If the instruction contains multiple changes (e.g. "Change date to 30/08/2026, change Needle Valve quantity to 10, and remove phone number"):
-     * Return all 3 separate edits in the edits array with clear descriptions.
+    const parts: any[] = [];
 
-8. NO HALLUCINATIONS:
-   - Only target content that actually exists in the provided document context. If a requested concept truly does not exist in any form, set found=false with a clear explanation.`;
+    if (imageBase64) {
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const mimeMatch = imageBase64.match(/^data:(image\/\w+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
 
-    const promptContext = `USER INSTRUCTION: "${instruction}"
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: base64Data,
+        },
+      });
+    }
+
+    let historyPrompt = '';
+    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+      historyPrompt = `\nRECENT CONVERSATION HISTORY:\n` +
+        chatHistory
+          .slice(-6)
+          .map((m: any) => `${m.role === 'user' ? 'USER' : 'TABULA AI'}: ${m.text}`)
+          .join('\n') +
+        `\n`;
+    }
+
+    const promptContext = `${historyPrompt}
+LATEST USER MESSAGE: "${instruction}"
 ACTIVE PAGE NUMBER: ${activePageNumber || 1}
 TOTAL PAGES: ${totalPages || 1}
 TODAY'S REFERENCE DATE: ${todayDateStr}
 
-DOCUMENT STRUCTURE & CONTENT:
+DOCUMENT STRUCTURE & CONTENT (CATALOG OF TEXT, TABLES, FIELDS):
 ${JSON.stringify(documentContext, null, 2)}
 
-Analyze the instruction semantically against the document data above and produce the exact in-place edit plan.`;
+Inspect the user's intent, the conversational context, and the document structure. Return a conversational response and any structured in-place edit instructions.`;
+
+    parts.push({ text: promptContext });
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
-      contents: promptContext,
+      contents: { parts },
       config: {
         systemInstruction,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            responseType: {
+              type: Type.STRING,
+              description: 'One of: edit_proposal, answer, confirmation, ambiguity, suggestion, not_found_help',
+            },
+            conversationText: {
+              type: Type.STRING,
+              description: 'The natural conversational AI response to display to the user in the chat bubble',
+            },
             found: {
               type: Type.BOOLEAN,
-              description: 'Whether target content or relevant field was found in the document',
-            },
-            notFoundMessage: {
-              type: Type.STRING,
-              description: 'Helpful message if no relevant field or content was found',
+              description: 'Whether target content or relevant field was identified in the document',
             },
             isSuggestion: {
               type: Type.BOOLEAN,
-              description: 'True if an alternative field was inferred (e.g. user typed 24/08/2026 but doc has 20-08-2026)',
+              description: 'True if an alternative field was inferred (e.g. user typed 24/08/2026 but doc has 09/07/2026)',
             },
             suggestionMessage: {
               type: Type.STRING,
               description: 'Friendly suggestion explanation explaining what was inferred from the document',
             },
-            explanation: {
-              type: Type.STRING,
-              description: 'Clear description of what the AI identified (e.g. "I found the Date field on page 1. Current value: 20-08-2026 -> New value: 30/08/2026")',
-            },
             isAmbiguous: {
               type: Type.BOOLEAN,
               description: 'True if multiple candidate fields exist and user did not specify which one',
-            },
-            ambiguityMessage: {
-              type: Type.STRING,
-              description: 'Explanation asking user to pick which field to modify',
             },
             ambiguityChoices: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  label: { type: Type.STRING, description: 'Field label (e.g. "Date", "Issue Date", "Expiry Date")' },
+                  label: { type: Type.STRING, description: 'Field label (e.g. "Purchase Price / Drum", "Date", "Reference")' },
                   oldValue: { type: Type.STRING, description: 'Current value found in this field' },
                   targetText: { type: Type.STRING, description: 'Text to replace' },
                   pageNumber: { type: Type.INTEGER, description: 'Page number' },
@@ -294,13 +303,9 @@ Analyze the instruction semantically against the document data above and produce
               },
               description: 'List of choices for user selection when multiple fields match',
             },
-            occurrencesCount: {
-              type: Type.INTEGER,
-              description: 'Number of occurrences found',
-            },
             changesSummary: {
               type: Type.STRING,
-              description: 'Concise summary of changes (e.g. "Date: 20-08-2026 -> 30/08/2026")',
+              description: 'Short single-line summary of changes (e.g. "Date: 09/07/2026 → 30/08/2026")',
             },
             edits: {
               type: Type.ARRAY,
@@ -317,7 +322,7 @@ Analyze the instruction semantically against the document data above and produce
                   },
                   fieldLabel: {
                     type: Type.STRING,
-                    description: 'Identified field name (e.g. Date, PO No, TC No, Purchaser, Qty)',
+                    description: 'Identified field name (e.g. Purchase Price / Drum, Date, PO No, TC No, Purchaser, Qty)',
                   },
                   pageNumber: {
                     type: Type.INTEGER,
@@ -349,7 +354,7 @@ Analyze the instruction semantically against the document data above and produce
                   },
                   rowMatchText: {
                     type: Type.STRING,
-                    description: 'Identifying text from this row (e.g. item name)',
+                    description: 'Identifying text from this row (e.g. USED OIL PER DRUM or item name)',
                   },
                   oldValue: {
                     type: Type.STRING,
@@ -376,13 +381,23 @@ Analyze the instruction semantically against the document data above and produce
                     type: Type.STRING,
                     description: 'Type of element: image, signature, shape, etc.',
                   },
+                  highlightBox: {
+                    type: Type.OBJECT,
+                    properties: {
+                      x: { type: Type.NUMBER },
+                      y: { type: Type.NUMBER },
+                      width: { type: Type.NUMBER },
+                      height: { type: Type.NUMBER },
+                    },
+                    description: 'Bounding box on the page in PDF points',
+                  },
                 },
                 required: ['type', 'description', 'pageNumber'],
               },
               description: 'List of discrete in-place edits to perform',
             },
           },
-          required: ['found', 'changesSummary', 'edits'],
+          required: ['responseType', 'conversationText', 'found', 'edits'],
         },
       },
     });
@@ -392,23 +407,25 @@ Analyze the instruction semantically against the document data above and produce
 
     res.json({
       success: true,
+      responseType: parsed.responseType || (parsed.edits?.length > 0 ? 'edit_proposal' : 'answer'),
+      conversationText: parsed.conversationText || parsed.explanation || 'I have analyzed your request.',
       found: parsed.found ?? true,
       notFoundMessage: parsed.notFoundMessage,
       isSuggestion: parsed.isSuggestion ?? false,
       suggestionMessage: parsed.suggestionMessage,
-      explanation: parsed.explanation,
+      explanation: parsed.conversationText || parsed.explanation,
       isAmbiguous: parsed.isAmbiguous ?? false,
-      ambiguityMessage: parsed.ambiguityMessage,
+      ambiguityMessage: parsed.ambiguityMessage || parsed.conversationText,
       ambiguityChoices: parsed.ambiguityChoices || [],
       occurrencesCount: parsed.occurrencesCount || parsed.edits?.length || 0,
-      changesSummary: parsed.changesSummary || 'AI Edit generated',
+      changesSummary: parsed.changesSummary || (parsed.edits?.length > 0 ? parsed.edits[0].description : 'AI Response'),
       edits: parsed.edits || [],
     });
   } catch (error: any) {
     console.error('AI Edit analysis error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to process AI edit instruction.',
+      error: error.message || 'Failed to process AI conversation with PDF.',
     });
   }
 });
