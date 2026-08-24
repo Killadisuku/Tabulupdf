@@ -1,135 +1,156 @@
 import React from 'react';
-import { FileSpreadsheet, Download, Plus, Sparkles, FolderUp, Layers, Globe } from 'lucide-react';
-import { SheetData } from '../types';
+import { 
+  FileSpreadsheet, 
+  Sparkles, 
+  Download, 
+  Layers, 
+  FolderOpen, 
+  Share2, 
+  FileText, 
+  Lock,
+  ChevronRight,
+  Files,
+  Zap,
+  History,
+  Grid,
+  ShieldCheck,
+  Plus
+} from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'converter' | 'batch' | 'samples';
-  setActiveTab: (tab: 'converter' | 'batch' | 'samples') => void;
-  sheets: SheetData[];
-  onOpenExport: () => void;
-  onNewDocument: () => void;
   hasDocument: boolean;
-  onOpenAiModal: () => void;
-  onOpenShare?: () => void;
+  fileName?: string;
+  pageCount?: number;
+  onExportClick?: () => void;
+  onOpenNew: () => void;
+  activeTab: 'converter' | 'tools' | 'batch' | 'history';
+  setActiveTab: (tab: 'converter' | 'tools' | 'batch' | 'history') => void;
+  onOpenVault?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  hasDocument,
+  fileName,
+  pageCount,
+  onExportClick,
+  onOpenNew,
   activeTab,
   setActiveTab,
-  sheets,
-  onOpenExport,
-  onNewDocument,
-  hasDocument,
-  onOpenAiModal,
-  onOpenShare,
+  onOpenVault
 }) => {
-  const totalRows = sheets.reduce((sum, s) => sum + s.rows.length, 0);
-
   return (
-    <header className="sticky top-0 z-30 bg-slate-900 border-b border-slate-800 text-slate-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand Zone */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-inner font-bold text-xl tracking-tight">
-            <FileSpreadsheet className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              Tabula<span className="text-emerald-400">PDF</span>
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                v2.6 Pro
+    <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Brand & Nav */}
+        <div className="flex items-center space-x-6">
+          <div 
+            className="flex items-center space-x-2.5 cursor-pointer group"
+            onClick={() => setActiveTab('converter')}
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+              <FileSpreadsheet className="w-5 h-5 text-slate-950 font-bold" />
+            </div>
+            <div>
+              <span className="text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+                Tabula<span className="text-emerald-400">PDF</span>
               </span>
-            </span>
+            </div>
           </div>
+
+          <nav className="hidden md:flex items-center space-x-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setActiveTab('converter')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'converter'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Converter
+            </button>
+
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'tools'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+              All PDF Tools
+            </button>
+
+            <button
+              onClick={() => setActiveTab('batch')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'batch'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Files className="w-3.5 h-3.5" />
+              Batch Queue
+            </button>
+
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'history'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              History
+            </button>
+          </nav>
         </div>
 
-        {/* Navigation Zone (Top Bar Contract) */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
-          <button
-            onClick={() => setActiveTab('converter')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all whitespace-nowrap ${
-              activeTab === 'converter'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            PDF Workbench
-          </button>
-          <button
-            onClick={() => setActiveTab('batch')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'batch'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FolderUp className="w-3.5 h-3.5" />
-            Batch Queue
-          </button>
-          <button
-            onClick={() => setActiveTab('samples')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'samples'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
-            Sample Vault
-          </button>
-        </nav>
+        {/* Middle: Active Document Badge (if loaded) */}
+        {hasDocument && fileName && (
+          <div className="hidden lg:flex items-center space-x-2 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800 max-w-sm">
+            <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="text-xs text-slate-300 truncate font-medium">{fileName}</span>
+            {pageCount !== undefined && (
+              <span className="text-[10px] text-slate-500 shrink-0">({pageCount} pgs)</span>
+            )}
+          </div>
+        )}
 
-        {/* Action Zone */}
-        <div className="flex items-center gap-2 shrink-0">
-          {onOpenShare && (
+        {/* Right Action buttons */}
+        <div className="flex items-center space-x-2.5">
+          {hasDocument ? (
             <button
-              onClick={onOpenShare}
-              className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all flex items-center gap-1.5"
-              title="Share or open on mobile"
-            >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
-          )}
-
-          {hasDocument && (
-            <button
-              onClick={onOpenAiModal}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-purple-600/30 to-indigo-600/30 border border-purple-500/40 text-purple-200 hover:bg-purple-600/40 px-3 py-2 rounded-lg transition-all"
-              title="Enhance with AI Vision OCR"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              AI Extract
-            </button>
-          )}
-
-          {hasDocument && (
-            <button
-              onClick={onNewDocument}
-              className="text-xs font-medium text-slate-400 hover:text-white px-3 py-2 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all flex items-center gap-1"
+              onClick={onOpenNew}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all border border-slate-700 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              New File
+              <span className="hidden sm:inline">Upload New</span>
             </button>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 font-medium">
+              <ShieldCheck className="w-4 h-4" />
+              <span>100% In-Browser Privacy</span>
+            </div>
           )}
 
-          <button
-            onClick={onOpenExport}
-            disabled={sheets.length === 0 || totalRows === 0}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              sheets.length > 0 && totalRows > 0
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            <span>Export Excel</span>
-            {totalRows > 0 && (
-              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-emerald-700/60 text-[10px]">
-                {totalRows} rows
-              </span>
-            )}
-          </button>
+          {/* Mobile menu icon toggles if needed */}
+          <div className="flex md:hidden items-center gap-1">
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`p-2 rounded-xl text-xs font-semibold ${activeTab === 'tools' ? 'text-emerald-400 bg-slate-800' : 'text-slate-400'}`}
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`p-2 rounded-xl text-xs font-semibold ${activeTab === 'history' ? 'text-emerald-400 bg-slate-800' : 'text-slate-400'}`}
+            >
+              <History className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </header>
