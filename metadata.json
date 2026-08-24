@@ -1,6 +1,6 @@
 {
   "name": "TabulaPDF - Smart PDF to Excel & CSV Converter",
-  "description": "Convert PDF documents, bank statements, invoices, and tables to high-fidelity Excel (.xlsx), CSV, and JSON sheets with instant local parsing and intelligent AI OCR extraction.",
+  "description": "Real-time in-browser PDF editor and conversion platform. Edit text, numbers, and tables directly on any PDF, add signatures and annotations, and export modified PDFs or convert to Excel, Word, CSV, PowerPoint, and images with 100% privacy.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

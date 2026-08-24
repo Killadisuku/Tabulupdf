@@ -41,6 +41,8 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 
   const getFormatIcon = (fmt: string) => {
     switch (fmt) {
+      case 'edited_pdf':
+        return <Sparkles className="w-5 h-5 text-emerald-400" />;
       case 'xlsx':
         return <FileSpreadsheet className="w-5 h-5 text-emerald-400" />;
       case 'docx':

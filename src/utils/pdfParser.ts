@@ -29,9 +29,10 @@ export interface RegionBounds {
 /**
  * Load PDF document from ArrayBuffer
  */
-export async function loadPdfDocument(arrayBuffer: ArrayBuffer) {
+export async function loadPdfDocument(arrayBuffer: ArrayBuffer, password?: string) {
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(arrayBuffer),
+    password: password,
     cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/',
     cMapPacked: true,
   });
@@ -292,38 +293,126 @@ export function clusterTextItemsIntoTable(
 }
 
 /**
+ * Parse page range strings such as "1-3, 5, 7-10"
+ */
+export function parsePageRange(rangeStr: string, maxPages: number): number[] {
+  if (!rangeStr || !rangeStr.trim()) {
+    return Array.from({ length: maxPages }, (_, i) => i + 1);
+  }
+  const pages = new Set<number>();
+  const parts = rangeStr.split(',');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed.includes('-')) {
+      const [startStr, endStr] = trimmed.split('-');
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (!isNaN(start) && !isNaN(end)) {
+        for (let p = Math.min(start, end); p <= Math.max(start, end); p++) {
+          if (p >= 1 && p <= maxPages) {
+            pages.add(p);
+          }
+        }
+      }
+    } else {
+      const p = parseInt(trimmed, 10);
+      if (!isNaN(p) && p >= 1 && p <= maxPages) {
+        pages.add(p);
+      }
+    }
+  }
+  const result = Array.from(pages).sort((a, b) => a - b);
+  return result.length > 0 ? result : Array.from({ length: maxPages }, (_, i) => i + 1);
+}
+
+/**
  * Extract complete tables across all or selected pages of a PDF document
  */
 export async function extractTablesFromPdf(
   pdfDoc: pdfjsLib.PDFDocumentProxy,
-  pageNumbers: number[],
-  options: {
+  pageNumbersOrOptions?:
+    | number[]
+    | {
+        firstRowIsHeader?: boolean;
+        trimWhitespace?: boolean;
+        selectedRegion?: { [pageNumber: number]: RegionBounds } | RegionBounds | null;
+        selectedPages?: 'all' | 'current' | 'custom';
+        customPageRange?: string;
+        combinePagesToOneSheet?: boolean;
+        [key: string]: any;
+      },
+  extraOptions?: {
     firstRowIsHeader?: boolean;
     trimWhitespace?: boolean;
-    selectedRegion?: { [pageNumber: number]: RegionBounds };
-  } = {}
+    selectedRegion?: { [pageNumber: number]: RegionBounds } | RegionBounds | null;
+    combinePagesToOneSheet?: boolean;
+  }
 ): Promise<SheetData[]> {
+  let targetPages: number[] = [];
+  let mergedOptions: any = {};
+
+  if (Array.isArray(pageNumbersOrOptions)) {
+    targetPages = pageNumbersOrOptions;
+    mergedOptions = extraOptions || {};
+  } else if (pageNumbersOrOptions && typeof pageNumbersOrOptions === 'object') {
+    mergedOptions = pageNumbersOrOptions;
+    if (mergedOptions.selectedPages === 'custom' && mergedOptions.customPageRange) {
+      targetPages = parsePageRange(mergedOptions.customPageRange, pdfDoc.numPages);
+    } else if (mergedOptions.selectedPages === 'current') {
+      targetPages = [1];
+    } else {
+      targetPages = Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1);
+    }
+  } else {
+    targetPages = Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1);
+    mergedOptions = extraOptions || {};
+  }
+
+  // Ensure targetPages has at least one valid number within bounds
+  if (!targetPages || targetPages.length === 0) {
+    targetPages = Array.from({ length: pdfDoc.numPages }, (_, i) => i + 1);
+  }
+
   const sheets: SheetData[] = [];
 
-  for (const pageNum of pageNumbers) {
-    const page = await pdfDoc.getPage(pageNum);
-    const region = options.selectedRegion?.[pageNum] || null;
-    const items = await extractPageTextItems(page, region);
-    const table = clusterTextItemsIntoTable(items, {
-      firstRowIsHeader: options.firstRowIsHeader ?? true,
-      trimWhitespace: options.trimWhitespace ?? true,
-    });
+  for (const pageNum of targetPages) {
+    if (pageNum < 1 || pageNum > pdfDoc.numPages) continue;
 
-    sheets.push({
-      id: `sheet-page-${pageNum}-${Date.now()}`,
-      name: `Page ${pageNum}`,
-      pageNumber: pageNum,
-      headers: table.headers.length > 0 ? table.headers : ['Column 1'],
-      rows: table.rows,
-      extractedAt: Date.now(),
-      isAiExtracted: false,
-      selectedRegion: region ? { ...region, page: pageNum } : null,
-    });
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+
+      let region: RegionBounds | null = null;
+      if (mergedOptions.selectedRegion) {
+        if ('x' in mergedOptions.selectedRegion && 'y' in mergedOptions.selectedRegion) {
+          region = mergedOptions.selectedRegion as RegionBounds;
+        } else if (mergedOptions.selectedRegion[pageNum]) {
+          region = mergedOptions.selectedRegion[pageNum];
+        }
+      }
+
+      const items = await extractPageTextItems(page, region);
+      const table = clusterTextItemsIntoTable(items, {
+        firstRowIsHeader: mergedOptions.firstRowIsHeader ?? true,
+        trimWhitespace: mergedOptions.trimWhitespace ?? true,
+      });
+
+      sheets.push({
+        id: `sheet-page-${pageNum}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: `Page ${pageNum}`,
+        pageNumber: pageNum,
+        headers: table.headers.length > 0 ? table.headers : ['Column 1'],
+        rows: table.rows,
+        extractedAt: Date.now(),
+        isAiExtracted: false,
+        selectedRegion: region ? { ...region, page: pageNum } : null,
+      });
+    } catch (pageErr) {
+      console.warn(`Failed extracting page ${pageNum}:`, pageErr);
+    }
+  }
+
+  if (mergedOptions.combinePagesToOneSheet && sheets.length > 1) {
+    return [consolidateSheets(sheets)];
   }
 
   return sheets;

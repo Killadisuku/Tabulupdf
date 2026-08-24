@@ -54,6 +54,7 @@ interface ActionSelectionGridProps {
   onOpenAiOcr: () => void;
   onInspectTables: () => void;
   onRemoveFile: () => void;
+  onOpenPdfEditor: () => void;
   thumbnailUrl?: string;
 }
 
@@ -71,6 +72,7 @@ export const ActionSelectionGrid: React.FC<ActionSelectionGridProps> = ({
   onOpenAiOcr,
   onInspectTables,
   onRemoveFile,
+  onOpenPdfEditor,
   thumbnailUrl,
 }) => {
   const [selectedAction, setSelectedAction] = useState<ActionTarget>('excel');
@@ -236,15 +238,42 @@ export const ActionSelectionGrid: React.FC<ActionSelectionGridProps> = ({
         </div>
       )}
 
-      {/* 2. "What would you like to do?" Section */}
+      {/* 2. Real-Time PDF Editor Hero Card */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/60 border-2 border-emerald-500/50 shadow-2xl relative overflow-hidden group">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span>Real-Time In-Place Editor</span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+              Edit this PDF directly in your browser
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              No need to convert to Word or Excel. Click any text, phone number, address, table cell, or price to edit in real time on this PDF, add signatures, shapes & whiteout, then download the modified PDF.
+            </p>
+          </div>
+
+          <button
+            onClick={onOpenPdfEditor}
+            className="px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+          >
+            <Sparkles className="w-4 h-4 text-slate-950" />
+            <span>Open in PDF Editor</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 3. "Or Convert to Other Formats" Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-extrabold text-white tracking-tight">
-              What would you like to do?
+              Or Convert & Export
             </h3>
             <p className="text-xs text-slate-400">
-              Select your target output format or document management tool.
+              Extract tabular data and document elements into other target formats.
             </p>
           </div>
         </div>

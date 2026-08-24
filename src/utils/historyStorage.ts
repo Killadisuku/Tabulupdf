@@ -1,7 +1,7 @@
 export interface HistoryItem {
   id: string;
   fileName: string;
-  outputFormat: 'xlsx' | 'docx' | 'csv' | 'pptx' | 'images' | 'txt' | 'html' | 'json' | 'xml' | 'merged_pdf' | 'split_pdf' | 'compressed_pdf' | 'rotated_pdf';
+  outputFormat: 'xlsx' | 'docx' | 'csv' | 'pptx' | 'images' | 'txt' | 'html' | 'json' | 'xml' | 'merged_pdf' | 'split_pdf' | 'compressed_pdf' | 'rotated_pdf' | 'edited_pdf';
   outputName: string;
   timestamp: number;
   originalSize: number;

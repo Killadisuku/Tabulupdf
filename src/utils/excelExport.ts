@@ -178,16 +178,39 @@ export function exportToCsvFile(
 }
 
 /**
- * Export sheet as JSON file
+ * Export document content and tables as a structured JSON file
  */
 export function exportToJsonFile(
-  sheet: SheetData,
-  fileName: string = 'Export.json',
-  format: 'records' | 'matrix' = 'records'
-) {
+  contentOrSheet: any,
+  sheetsOrFileName?: any,
+  maybeFileName: string = 'document_data.json'
+): void {
   let jsonString = '';
+  let finalFileName = maybeFileName;
 
-  if (format === 'records') {
+  if (Array.isArray(sheetsOrFileName)) {
+    // Called with (content, sheets, fileName)
+    const sheets = sheetsOrFileName as SheetData[];
+    const exportData = {
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        sheetsCount: sheets.length,
+        pagesCount: contentOrSheet?.totalPages || 1,
+      },
+      tables: sheets.map((s) => ({
+        name: s.name,
+        page: s.pageNumber,
+        headers: s.headers,
+        rows: s.rows,
+      })),
+      textByPage: contentOrSheet?.pages || [],
+    };
+    jsonString = JSON.stringify(exportData, null, 2);
+    finalFileName = maybeFileName;
+  } else if (contentOrSheet && contentOrSheet.headers) {
+    // Single sheet
+    const sheet = contentOrSheet as SheetData;
+    finalFileName = typeof sheetsOrFileName === 'string' ? sheetsOrFileName : 'Export.json';
     const records = sheet.rows.map((row) => {
       const obj: Record<string, any> = {};
       sheet.headers.forEach((header, idx) => {
@@ -198,21 +221,15 @@ export function exportToJsonFile(
     });
     jsonString = JSON.stringify(records, null, 2);
   } else {
-    jsonString = JSON.stringify(
-      {
-        headers: sheet.headers,
-        rows: sheet.rows,
-      },
-      null,
-      2
-    );
+    jsonString = JSON.stringify(contentOrSheet || {}, null, 2);
+    finalFileName = typeof sheetsOrFileName === 'string' ? sheetsOrFileName : 'Export.json';
   }
 
   const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.setAttribute('download', fileName);
+  link.setAttribute('download', finalFileName);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
