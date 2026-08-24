@@ -22,10 +22,18 @@ import { SignatureModal } from './SignatureModal';
 import { FindReplaceBar } from './FindReplaceBar';
 import { exportModifiedPdf } from '../../utils/pdfEditorExport';
 import { saveConversionHistoryItem } from '../../utils/historyStorage';
-import { extractPageTextItems } from '../../utils/pdfParser';
+import { extractPageTextItems, PdfTextItem } from '../../utils/pdfParser';
 import { detectTablesFromPageTextItems } from '../../utils/tableDetector';
 import { SheetData } from '../../types';
 import { Sparkles } from 'lucide-react';
+import { AiEditPanel } from './AiEditPanel';
+import {
+  AiEditPlanResult,
+  AiEditHistoryEntry,
+  AiHighlightBox,
+  analyzeAiEditInstruction,
+  applyAiEditPlanToPages
+} from '../../utils/aiEditEngine';
 
 interface PdfEditorWorkspaceProps {
   pdfDoc: pdfjsLib.PDFDocumentProxy | null;
@@ -102,6 +110,14 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
   const [isScannedDetected, setIsScannedDetected] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // 6. AI Edit State
+  const [isAiEditOpen, setIsAiEditOpen] = useState(false);
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+  const [currentAiPlan, setCurrentAiPlan] = useState<AiEditPlanResult | null>(null);
+  const [aiHighlightBoxes, setAiHighlightBoxes] = useState<AiHighlightBox[]>([]);
+  const [aiEditHistory, setAiEditHistory] = useState<AiEditHistoryEntry[]>([]);
+  const [cachedPageTextItems, setCachedPageTextItems] = useState<Map<number, PdfTextItem[]>>(new Map());
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Show Toast helper
@@ -110,7 +126,7 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Automatic Genuine Table Recognition on PDF Document Load
+  // Automatic Genuine Table Recognition & Text Cache on PDF Document Load
   useEffect(() => {
     let isCancelled = false;
 
@@ -119,18 +135,24 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
 
       try {
         const detectedPages: { pageNum: number; tables: TableElement[] }[] = [];
+        const textItemsMap = new Map<number, PdfTextItem[]>();
 
         for (let p = 1; p <= pdfDoc.numPages; p++) {
           const page = await pdfDoc.getPage(p);
           const viewport = page.getViewport({ scale: 1.0 });
           const items = await extractPageTextItems(page);
+          textItemsMap.set(p, items);
+
           const tables = detectTablesFromPageTextItems(items, p, viewport.width, viewport.height);
           if (tables && tables.length > 0) {
             detectedPages.push({ pageNum: p, tables });
           }
         }
 
-        if (isCancelled || detectedPages.length === 0) return;
+        if (isCancelled) return;
+        setCachedPageTextItems(textItemsMap);
+
+        if (detectedPages.length === 0) return;
 
         setPages((prev) =>
           prev.map((pageData) => {
@@ -162,6 +184,81 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
       isCancelled = true;
     };
   }, [pdfDoc]);
+
+  // AI Edit Handlers
+  const handleAnalyzeAiInstruction = async (instruction: string): Promise<AiEditPlanResult | null> => {
+    setIsAiAnalyzing(true);
+    try {
+      const result = await analyzeAiEditInstruction(
+        instruction,
+        activePageNumber,
+        pages,
+        cachedPageTextItems
+      );
+
+      if (result.found && result.edits.length > 0) {
+        setCurrentAiPlan(result);
+        setAiHighlightBoxes(result.highlightBoxes);
+
+        // Switch to the first affected page to show highlight immediately
+        const firstTargetPage = result.edits[0]?.pageNumber;
+        if (firstTargetPage && firstTargetPage !== activePageNumber) {
+          setActivePageNumber(firstTargetPage);
+        }
+      } else {
+        setCurrentAiPlan(null);
+        setAiHighlightBoxes([]);
+      }
+
+      return result;
+    } catch (err: any) {
+      console.error('AI Edit analysis failed:', err);
+      showToast(err.message || 'Failed to process AI edit');
+      return null;
+    } finally {
+      setIsAiAnalyzing(false);
+    }
+  };
+
+  const handleApplyAiPlan = (plan: AiEditPlanResult) => {
+    if (!plan || plan.edits.length === 0) return;
+
+    // Save current state for undo
+    pushHistory(pages);
+
+    // Record into AI History log
+    const historyEntry: AiEditHistoryEntry = {
+      id: `ai-hist-${Date.now()}`,
+      timestamp: new Date(),
+      prompt: plan.changesSummary,
+      summary: plan.changesSummary,
+      editsCount: plan.edits.length,
+      pagesSnapshot: JSON.parse(JSON.stringify(pages)),
+    };
+    setAiEditHistory((prev) => [historyEntry, ...prev.slice(0, 15)]);
+
+    // Apply the plan to pages
+    const updatedPages = applyAiEditPlanToPages(pages, plan.edits, cachedPageTextItems);
+    setPages(updatedPages);
+
+    // Clear preview & highlights
+    setCurrentAiPlan(null);
+    setAiHighlightBoxes([]);
+
+    showToast(`✓ AI Edit Applied: ${plan.changesSummary}`);
+  };
+
+  const handleClearAiPreview = () => {
+    setCurrentAiPlan(null);
+    setAiHighlightBoxes([]);
+  };
+
+  const handleUndoAiHistoryEntry = (entry: AiEditHistoryEntry) => {
+    pushHistory(pages);
+    setPages(entry.pagesSnapshot);
+    setAiEditHistory((prev) => prev.filter((h) => h.id !== entry.id));
+    showToast(`Reverted AI modification: "${entry.prompt}"`);
+  };
 
   // Push state to undo history before modifying
   const pushHistory = useCallback((currentPages: PageEditData[]) => {
@@ -835,6 +932,8 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
         onOpenImageUpload={handleOpenImageUpload}
         onToggleFindReplace={() => setIsFindReplaceOpen(!isFindReplaceOpen)}
         isFindReplaceOpen={isFindReplaceOpen}
+        onToggleAiEdit={() => setIsAiEditOpen(!isAiEditOpen)}
+        isAiEditOpen={isAiEditOpen}
         onDownloadPdf={handleSaveAndDownloadPdf}
         onExportWord={onExportWord}
         onExportExcel={onExportExcel}
@@ -891,6 +990,7 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
           onAddTableColumn={handleAddTableColumn}
           onDeleteTableColumn={handleDeleteTableColumn}
           findQuery={findQuery}
+          aiHighlightBoxes={aiHighlightBoxes}
         />
 
         {/* 3. COMPACT TEXT & CELL EDITOR (Bottom dock on mobile, slim card on desktop) */}
@@ -975,7 +1075,23 @@ export const PdfEditorWorkspace: React.FC<PdfEditorWorkspaceProps> = ({
         }}
       />
 
-      {/* 9. TOAST NOTIFICATION */}
+      {/* 9. AI EDIT INTERFACE (Bottom Sheet on mobile, Floating Side Panel on desktop) */}
+      <AiEditPanel
+        isOpen={isAiEditOpen}
+        onClose={() => {
+          setIsAiEditOpen(false);
+          handleClearAiPreview();
+        }}
+        onAnalyzeInstruction={handleAnalyzeAiInstruction}
+        onApplyPlan={handleApplyAiPlan}
+        onClearPreview={handleClearAiPreview}
+        isAnalyzing={isAiAnalyzing}
+        currentPlan={currentAiPlan}
+        history={aiEditHistory}
+        onUndoHistoryEntry={handleUndoAiHistoryEntry}
+      />
+
+      {/* 10. TOAST NOTIFICATION */}
       {toastMessage && (
         <div className="fixed bottom-18 sm:bottom-20 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md border border-slate-700 text-slate-100 px-4 py-2 rounded-xl text-xs font-semibold shadow-2xl flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-3">
           <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />

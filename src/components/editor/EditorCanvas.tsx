@@ -13,7 +13,8 @@ import {
   DetectedTextItem
 } from '../../types/editor';
 import { SelectedTableCellInfo } from './CompactTextEditor';
-import { Plus, Trash2, Grid, Check, X } from 'lucide-react';
+import { Plus, Trash2, Grid, Check, X, Sparkles } from 'lucide-react';
+import { AiHighlightBox } from '../../utils/aiEditEngine';
 
 interface EditorCanvasProps {
   pdfDoc: pdfjsLib.PDFDocumentProxy | null;
@@ -34,6 +35,7 @@ interface EditorCanvasProps {
   onAddTableColumn?: (tableId: string, afterColIndex?: number) => void;
   onDeleteTableColumn?: (tableId: string, colIndex?: number) => void;
   findQuery: string;
+  aiHighlightBoxes?: AiHighlightBox[];
 }
 
 export const EditorCanvas: React.FC<EditorCanvasProps> = ({
@@ -55,6 +57,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
   onAddTableColumn,
   onDeleteTableColumn,
   findQuery,
+  aiHighlightBoxes = [],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1153,6 +1156,49 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
             }}
           />
         )}
+
+        {/* LAYER 6: AI EDIT PREVIEW HIGHLIGHTS */}
+        {aiHighlightBoxes
+          .filter((box) => box.pageNumber === activePageData.pageNumber)
+          .map((box) => {
+            const isDelete = box.actionType === 'delete';
+            const isUpdate = box.actionType === 'update';
+
+            return (
+              <div
+                key={box.id}
+                className={`absolute pointer-events-none rounded-lg transition-all z-50 animate-pulse ring-2 ${
+                  isDelete
+                    ? 'ring-rose-500 bg-rose-500/15 border-2 border-rose-500'
+                    : isUpdate
+                    ? 'ring-sky-500 bg-sky-500/15 border-2 border-sky-500'
+                    : 'ring-emerald-500 bg-emerald-500/20 border-2 border-emerald-400'
+                }`}
+                style={{
+                  left: `${box.x * zoom}px`,
+                  top: `${box.y * zoom}px`,
+                  width: `${box.width * zoom}px`,
+                  height: `${box.height * zoom}px`,
+                }}
+              >
+                {/* Floating Badge above highlighted region */}
+                {box.label && (
+                  <div
+                    className={`absolute -top-7 left-0 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-lg flex items-center gap-1 whitespace-nowrap z-50 backdrop-blur-xs ${
+                      isDelete
+                        ? 'bg-rose-900 text-rose-100 border border-rose-600'
+                        : isUpdate
+                        ? 'bg-sky-900 text-sky-100 border border-sky-600'
+                        : 'bg-emerald-900 text-emerald-100 border border-emerald-500'
+                    }`}
+                  >
+                    <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                    <span className="truncate max-w-[200px]">{box.label}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
     </div>
   );

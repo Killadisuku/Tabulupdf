@@ -50,6 +50,8 @@ interface EditorToolbarProps {
   onOpenImageUpload: () => void;
   onToggleFindReplace: () => void;
   isFindReplaceOpen: boolean;
+  onToggleAiEdit: () => void;
+  isAiEditOpen: boolean;
   onDownloadPdf: () => void;
   onExportWord: () => void;
   onExportExcel: () => void;
@@ -84,6 +86,8 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onOpenImageUpload,
   onToggleFindReplace,
   isFindReplaceOpen,
+  onToggleAiEdit,
+  isAiEditOpen,
   onDownloadPdf,
   onExportWord,
   onExportExcel,
@@ -220,6 +224,20 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             </button>
           </div>
 
+          {/* Top Bar AI Edit Button */}
+          <button
+            onClick={onToggleAiEdit}
+            className={`hidden md:flex px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold items-center gap-1.5 transition-all cursor-pointer ${
+              isAiEditOpen
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400'
+                : 'bg-gradient-to-r from-emerald-500/20 to-violet-500/20 border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/30'
+            }`}
+            title="AI Natural Language PDF Edit (✨)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>AI Edit</span>
+          </button>
+
           {/* PRIMARY ACTION: Save & Download Modified PDF */}
           <button
             onClick={onDownloadPdf}
@@ -266,6 +284,17 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 </button>
 
                 <div className="h-px bg-slate-800 my-1"></div>
+
+                <button
+                  onClick={() => {
+                    onToggleAiEdit();
+                    setShowMoreMenu(false);
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-2 text-emerald-300 hover:bg-emerald-950/40 hover:text-emerald-200 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>✨ AI Natural Language Edit</span>
+                </button>
 
                 <button
                   onClick={() => {
@@ -507,6 +536,22 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
             >
               <ImageIcon className="w-4 h-4 text-sky-400" />
               <span className="hidden lg:inline">Image</span>
+            </button>
+
+            <div className="w-px h-5 bg-slate-700 mx-0.5" />
+
+            {/* ✨ AI Edit Floating Dock Tool */}
+            <button
+              onClick={onToggleAiEdit}
+              className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                isAiEditOpen
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400'
+                  : 'bg-gradient-to-r from-emerald-500/20 to-violet-500/20 border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/30'
+              }`}
+              title="AI Natural Language PDF Edit (✨)"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>AI Edit</span>
             </button>
           </div>
         </div>
