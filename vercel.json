@@ -2,94 +2,63 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "tabulupdf.vercel.app" }],
+      "destination": "https://tabulapdf.vercel.app/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "tabulupdf.vercel.app" }],
+      "destination": "https://tabulapdf.vercel.app/:path+",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "tabulupdf-i7sn.vercel.app" }],
+      "destination": "https://tabulapdf.vercel.app/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "tabulupdf-i7sn.vercel.app" }],
+      "destination": "https://tabulapdf.vercel.app/:path+",
+      "permanent": true
+    },
+    { "source": "/pdf-to-excel.html", "destination": "/pdf-to-excel", "permanent": true },
+    { "source": "/pdf-to-csv.html", "destination": "/pdf-to-csv", "permanent": true },
+    { "source": "/pdf-to-word.html", "destination": "/pdf-to-word", "permanent": true },
+    { "source": "/bank-statement-to-excel.html", "destination": "/bank-statement-to-excel", "permanent": true },
+    { "source": "/invoice-to-excel.html", "destination": "/invoice-to-excel", "permanent": true },
+    { "source": "/scanned-pdf-to-excel.html", "destination": "/scanned-pdf-to-excel", "permanent": true },
+    { "source": "/pdf-to-json.html", "destination": "/pdf-to-json", "permanent": true },
+    { "source": "/merge-pdf.html", "destination": "/merge-pdf", "permanent": true },
+    { "source": "/split-pdf.html", "destination": "/split-pdf", "permanent": true },
+    { "source": "/compress-pdf.html", "destination": "/compress-pdf", "permanent": true },
+    { "source": "/pdf-to-excel/", "destination": "/pdf-to-excel", "permanent": true },
+    { "source": "/pdf-to-csv/", "destination": "/pdf-to-csv", "permanent": true },
+    { "source": "/pdf-to-word/", "destination": "/pdf-to-word", "permanent": true },
+    { "source": "/bank-statement-to-excel/", "destination": "/bank-statement-to-excel", "permanent": true },
+    { "source": "/invoice-to-excel/", "destination": "/invoice-to-excel", "permanent": true },
+    { "source": "/scanned-pdf-to-excel/", "destination": "/scanned-pdf-to-excel", "permanent": true },
+    { "source": "/pdf-to-json/", "destination": "/pdf-to-json", "permanent": true },
+    { "source": "/merge-pdf/", "destination": "/merge-pdf", "permanent": true },
+    { "source": "/split-pdf/", "destination": "/split-pdf", "permanent": true },
+    { "source": "/compress-pdf/", "destination": "/compress-pdf", "permanent": true }
+  ],
   "rewrites": [
-    {
-      "source": "/pdf-to-excel",
-      "destination": "/pdf-to-excel.html"
-    },
-    {
-      "source": "/pdf-to-excel/",
-      "destination": "/pdf-to-excel.html"
-    },
-    {
-      "source": "/pdf-to-csv",
-      "destination": "/pdf-to-csv.html"
-    },
-    {
-      "source": "/pdf-to-csv/",
-      "destination": "/pdf-to-csv.html"
-    },
-    {
-      "source": "/pdf-to-word",
-      "destination": "/pdf-to-word.html"
-    },
-    {
-      "source": "/pdf-to-word/",
-      "destination": "/pdf-to-word.html"
-    },
-    {
-      "source": "/bank-statement-to-excel",
-      "destination": "/bank-statement-to-excel.html"
-    },
-    {
-      "source": "/bank-statement-to-excel/",
-      "destination": "/bank-statement-to-excel.html"
-    },
-    {
-      "source": "/invoice-to-excel",
-      "destination": "/invoice-to-excel.html"
-    },
-    {
-      "source": "/invoice-to-excel/",
-      "destination": "/invoice-to-excel.html"
-    },
-    {
-      "source": "/scanned-pdf-to-excel",
-      "destination": "/scanned-pdf-to-excel.html"
-    },
-    {
-      "source": "/scanned-pdf-to-excel/",
-      "destination": "/scanned-pdf-to-excel.html"
-    },
-    {
-      "source": "/pdf-to-json",
-      "destination": "/pdf-to-json.html"
-    },
-    {
-      "source": "/pdf-to-json/",
-      "destination": "/pdf-to-json.html"
-    },
-    {
-      "source": "/merge-pdf",
-      "destination": "/merge-pdf.html"
-    },
-    {
-      "source": "/merge-pdf/",
-      "destination": "/merge-pdf.html"
-    },
-    {
-      "source": "/split-pdf",
-      "destination": "/split-pdf.html"
-    },
-    {
-      "source": "/split-pdf/",
-      "destination": "/split-pdf.html"
-    },
-    {
-      "source": "/compress-pdf",
-      "destination": "/compress-pdf.html"
-    },
-    {
-      "source": "/compress-pdf/",
-      "destination": "/compress-pdf.html"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/pdf-to-excel", "destination": "/pdf-to-excel.html" },
+    { "source": "/pdf-to-csv", "destination": "/pdf-to-csv.html" },
+    { "source": "/pdf-to-word", "destination": "/pdf-to-word.html" },
+    { "source": "/bank-statement-to-excel", "destination": "/bank-statement-to-excel.html" },
+    { "source": "/invoice-to-excel", "destination": "/invoice-to-excel.html" },
+    { "source": "/scanned-pdf-to-excel", "destination": "/scanned-pdf-to-excel.html" },
+    { "source": "/pdf-to-json", "destination": "/pdf-to-json.html" },
+    { "source": "/merge-pdf", "destination": "/merge-pdf.html" },
+    { "source": "/split-pdf", "destination": "/split-pdf.html" },
+    { "source": "/compress-pdf", "destination": "/compress-pdf.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }

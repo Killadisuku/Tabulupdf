@@ -99,9 +99,9 @@ export const Dropzone: React.FC<DropzoneProps> = ({
           <span>100% In-Browser Privacy • Zero Server Storage</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-          Edit PDFs in <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">Real Time</span> or convert
-        </h1>
+        <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+          Drop a PDF to convert or edit
+        </h2>
 
         <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
           Open PDFs directly to edit text, numbers, phone numbers, and tables in-place without converting. Or export directly to Excel, Word, and images.
