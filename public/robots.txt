@@ -1,11 +1,5 @@
-# Robots.txt for TabulaPDF
-# https://tabulapdf.vercel.app/
-
 User-agent: *
 Allow: /
-Allow: /api/
-Allow: /assets/
-Allow: /sitemap.xml
+Disallow: /api/
 
-# Sitemaps
 Sitemap: https://tabulapdf.vercel.app/sitemap.xml

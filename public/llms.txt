@@ -1,0 +1,15 @@
+# TabulaPDF
+
+ > Free PDF to Excel, CSV, Word, and JSON. Digital PDFs are converted in the browser. AI reading for scans is optional and sends that page.
+
+## Tools
+- [PDF to Excel](https://tabulapdf.vercel.app/pdf-to-excel): Convert PDF tables to a real Excel workbook. Review rows in the browser, merge repeating page headers, then download .xlsx. No account required.
+- [PDF to CSV](https://tabulapdf.vercel.app/pdf-to-csv): Export PDF tables to CSV or TSV for Sheets, Python, or SQL. Check the columns first, then download a plain text table. Free in the browser, no account.
+- [PDF to Word](https://tabulapdf.vercel.app/pdf-to-word): Turn a PDF report or resume into an editable Word document. Text and tables come out as .docx you can revise. Free, no account, and no install.
+- [Bank statements](https://tabulapdf.vercel.app/bank-statement-to-excel): Turn a PDF bank statement into Excel columns for date, description, and amount. Built for bookkeeping. Digital statements stay in the browser.
+- [Invoices](https://tabulapdf.vercel.app/invoice-to-excel): Pull invoice line items, quantities, and prices from a PDF into Excel. Check SKUs and totals before you download the sheet. Free, no account.
+- [Scanned PDFs](https://tabulapdf.vercel.app/scanned-pdf-to-excel): Read a scanned PDF or photo of a table into Excel. AI reading is optional and sends that page to be processed. Digital PDFs stay in the browser.
+- [PDF to JSON](https://tabulapdf.vercel.app/pdf-to-json): Extract PDF tables to JSON for an API or a script. Headers become keys and each row becomes an object. Free, and you review the grid in the browser first.
+- [Merge PDF](https://tabulapdf.vercel.app/merge-pdf): Combine PDF files into one document, in the order you choose. A free browser tool for packets, exhibits, and reports. No account and no install.
+- [Split PDF](https://tabulapdf.vercel.app/split-pdf): Split a PDF by page range and download just the pages you need. Free in the browser. Useful before you convert one section of a packet to Excel.
+- [Compress PDF](https://tabulapdf.vercel.app/compress-pdf): Make a PDF smaller for email by rebuilding the file. Free in the browser. Compress a copy, then convert tables to Excel if you still need the data.

@@ -4,6 +4,86 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/pdf-to-excel",
+      "destination": "/pdf-to-excel.html"
+    },
+    {
+      "source": "/pdf-to-excel/",
+      "destination": "/pdf-to-excel.html"
+    },
+    {
+      "source": "/pdf-to-csv",
+      "destination": "/pdf-to-csv.html"
+    },
+    {
+      "source": "/pdf-to-csv/",
+      "destination": "/pdf-to-csv.html"
+    },
+    {
+      "source": "/pdf-to-word",
+      "destination": "/pdf-to-word.html"
+    },
+    {
+      "source": "/pdf-to-word/",
+      "destination": "/pdf-to-word.html"
+    },
+    {
+      "source": "/bank-statement-to-excel",
+      "destination": "/bank-statement-to-excel.html"
+    },
+    {
+      "source": "/bank-statement-to-excel/",
+      "destination": "/bank-statement-to-excel.html"
+    },
+    {
+      "source": "/invoice-to-excel",
+      "destination": "/invoice-to-excel.html"
+    },
+    {
+      "source": "/invoice-to-excel/",
+      "destination": "/invoice-to-excel.html"
+    },
+    {
+      "source": "/scanned-pdf-to-excel",
+      "destination": "/scanned-pdf-to-excel.html"
+    },
+    {
+      "source": "/scanned-pdf-to-excel/",
+      "destination": "/scanned-pdf-to-excel.html"
+    },
+    {
+      "source": "/pdf-to-json",
+      "destination": "/pdf-to-json.html"
+    },
+    {
+      "source": "/pdf-to-json/",
+      "destination": "/pdf-to-json.html"
+    },
+    {
+      "source": "/merge-pdf",
+      "destination": "/merge-pdf.html"
+    },
+    {
+      "source": "/merge-pdf/",
+      "destination": "/merge-pdf.html"
+    },
+    {
+      "source": "/split-pdf",
+      "destination": "/split-pdf.html"
+    },
+    {
+      "source": "/split-pdf/",
+      "destination": "/split-pdf.html"
+    },
+    {
+      "source": "/compress-pdf",
+      "destination": "/compress-pdf.html"
+    },
+    {
+      "source": "/compress-pdf/",
+      "destination": "/compress-pdf.html"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
